@@ -1,65 +1,29 @@
-// function showList(){
-//     $.ajax({
-//         type:"GET",
-//         url:"http://localhost:8080/blogs/list",
-//         success: function (blogs){
-//             console.log(blogs)
-//             let content = '';
-//             let image = '';
-//             for (let i = 0; i < blogs.length; i++) {
-//
-//                 // blogs[i].covers.forEach(c => {
-//                 //     image += `<img src="${'http://localhost:8080/image/' + c.name}" width="100px">`
-//                 // })
-//                 for (let j = 0; j < blogs[i].covers.length; j++) {
-//                     image += `<img src="${'http://localhost:8080/image/' + blogs[i].covers[j].name}" width="100px">`
-//                 }
-//                 content += `<tr>
-//         <th scope="row">${i+1}</th>
-//         <td>${blogs[i].title}</td>
-//         <td id="showImg"></td>
-//         <td>${blogs[i].category.name}</td>
-//         <td>${blogs[i].content}</td>
-//         <td><button onclick="deleteBlog(${blogs[i].id})">Delete</button></td>
-//         <td><button type="button" onclick="showEditForm(${blogs[i].id})" data-bs-toggle="modal" data-bs-target="#myModal1">Update</button></td>
-//     </tr>`
-//
-//             }
-//             //
-//             $("#showList").html(content);
-//             $("#showImg").html(image);
-//
-//         },
-//         error: function (error) {
-//             console.log(error)
-//         }
-//     })
-// }
-//
-// showList();
+function showList(){
+    $.ajax({
+        type: "GET",
+        url: "http://localhost:8080/blogs/list",
+        success: function (blogs) {
+            console.log(blogs)
+            var tr = [];
+            for (var i = 0; i < blogs.length; i++) {
+                tr.push('<tr id="vodeptrai">');
+                tr.push('<td>' + blogs[i].id + '</td>');
+                tr.push('<td>' + blogs[i].title + '</td>');
+                tr.push('<td>');
+                for (var j = 0; j < blogs[i].covers.length; j++) {
+                    tr.push(`<img src="${'http://localhost:8080/image/' + blogs[i].covers[j].name}" width="100px">`)
+                }
+                tr.push('</td>');
 
-$(document).ready(function() {
-    $.getJSON('http://localhost:8080/blogs/list', function(blogs) {
-        var tr=[];
-        for (var i = 0; i < blogs.length; i++) {
-            tr.push('<tr>');
-            tr.push('<td>' + blogs[i].id + '</td>');
-            tr.push('<td>' + blogs[i].title + '</td>');
-            tr.push('<td>');
-            for(var j =0; j< blogs[i].covers.length;j++){
-                tr.push(`<img src="${'http://localhost:8080/image/' + blogs[i].covers[j].name}" width="100px">`)
+                tr.push('<td>' + blogs[i].content + '</td>');
+                tr.push('<td>' + blogs[i].category.name + '</td>');
+                tr.push(`<td><button type="button" onclick="showEditForm(${blogs[i].id})"  data-bs-toggle="modal" data-bs-target="#myModal1">Update</button></td>`);
+                tr.push(`<td><button onclick="deleteBlog(${blogs[i].id})">Delete</button></td>`)
+                tr.push('</tr>');
             }
-            tr.push('</td>');
-
-            tr.push('<td>' + blogs[i].content + '</td>');
-            tr.push('<td>' + blogs[i].category.name + '</td>');
-            tr.push(`<td><button type="button" onclick="showEditForm(${blogs[i].id})"  data-bs-toggle="modal" data-bs-target="#myModal1">Update</button></td>`);
-            tr.push(`<td><button onclick="deleteBlog(${blogs[i].id})">Delete</button></td>`)
-            tr.push('</tr>');
+            $('#tb').append($(tr.join('')));
         }
-        $('#tb').append($(tr.join('')));
-    });
-
+})
     $(document).delegate('.btn-add', 'click', function(event) {
         event.preventDefault();
 
@@ -80,7 +44,50 @@ $(document).ready(function() {
             }
         });
     });
-})
+}
+
+
+showList();
+
+function login() {
+    let name = $(`#name`).val();
+    let password = $(`#password`).val();
+    let user = {
+        name : name,
+        password: password
+    }
+    $.ajax({
+        type : 'POST',
+        url : `http://localhost:8080/login`,
+        data : JSON.stringify(user),
+        headers : {
+            'Accept' : 'application/json',
+            'Content-Type' : 'application/json'
+        },
+        success : function (currentUser) {
+            localStorage.setItem("currentUser", JSON.stringify(currentUser))
+            let blogs = JSON.parse(localStorage.getItem("currentUser"));
+            $.ajax({
+                type: 'GET',
+                url: `http://localhost:8080/blog/list`,
+                headers: {
+                    "Authorization": 'Bearer ' + blogs.token
+                },
+                success: function (userInfo) {
+                    if (userInfo.id % 1 == 0)  {
+                        location.href = '../blog.html'
+                    } else {
+                        location.href = '../blog.html'
+                    }
+                }
+            })
+        },
+        error : function () {
+            showErrorMessage('Login failed!')
+        }
+    })
+}
+
 
 
 
@@ -192,9 +199,7 @@ showCategoryList();
 
 function create(){
     let form1 = $('#form-blog')[0];
-    console.log(form1)
     let blogForm = new FormData(form1);
-    console.log(blogForm)
     $.ajax({
         type:"POST",
         enctype: 'multipart/form-data',
@@ -203,7 +208,8 @@ function create(){
         data: blogForm,
         url:"http://localhost:8080/blogs/create",
         success: function (){
-            showList()
+            $('#vodeptrai').remove();
+            showList();
         }
     });
     event.preventDefault();
@@ -215,6 +221,7 @@ function deleteBlog(id){
         type:"DELETE",
         url:`http://localhost:8080/blogs/delete/${id}`,
         success : function () {
+            $('#vodeptrai').remove();
             showList()
         }
     })
